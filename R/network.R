@@ -23,7 +23,7 @@ graphMinalemine <- function() {
   # Run network generation
   msannotator::networkMGFs(
     mgf_files,
-    outputGML = '~/Desktop/package_test',
+    outputGML = 'package_test',
     cutoff = 0.5,
     includeFragments = FALSE,
     includeMS1 = FALSE
@@ -68,7 +68,7 @@ graphMinalemine <- function() {
 #' @import foreach
 #' @importFrom stringr str_split
 #' @export
-networkMGFs <- function(files, cutoff = 0.5, outputGML = 'Desktop/msms_network', includeMS1 = TRUE, includeFragments = TRUE, rt_h = 30, mz_h = 0.005) {
+networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', includeMS1 = TRUE, includeFragments = TRUE, rt_h = 30, mz_h = 0.005) {
   data     <- list()
   names    <- c()
   pmz      <- c()
