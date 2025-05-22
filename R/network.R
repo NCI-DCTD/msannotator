@@ -6,7 +6,7 @@
 #' @details
 #' This is a helper function intended for testing or demonstrating the
 #' `networkMGFs` function in the `msannotator` package. The generated GML
-#' output is written to `~/Desktop/package_test`.
+#' output is written to `package_test` in current working directory.
 #'
 #' @return No return value. Called for side effect of writing a GML file.
 #' @export
@@ -40,7 +40,7 @@ graphMinalemine <- function() {
 #' @param cutoff Numeric threshold for pairwise similarity. Only spectra with a similarity
 #'   above this threshold are included in the network. Default is 0.5.
 #' @param outputGML The file path prefix for saving the output GraphML file. Default is
-#'   `'Desktop/msms_network'`.
+#'   `'msms_network'` in current working directory.
 #' @param includeMS1 Logical. If TRUE, directional MS1-based annotations are used to modify
 #'   edge weights in the network. Annotations will be added to network edges. Default is TRUE.
 #' @param includeFragments Logical. If TRUE, pairwise calculations of two features will 

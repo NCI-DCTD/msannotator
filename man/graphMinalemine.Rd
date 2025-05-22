@@ -16,7 +16,7 @@ package and runs them through `msannotator::networkMGFs()` to generate a network
 \details{
 This is a helper function intended for testing or demonstrating the
 `networkMGFs` function in the `msannotator` package. The generated GML
-output is written to `~/Desktop/package_test`.
+output is written to `package_test` in current working directory.
 }
 \examples{
 graphMinalemine()
