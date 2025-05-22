@@ -7,7 +7,7 @@
 networkMGFs(
   files,
   cutoff = 0.5,
-  outputGML = "Desktop/msms_network",
+  outputGML = "msms_network",
   includeMS1 = TRUE,
   includeFragments = TRUE,
   rt_h = 30,
@@ -21,7 +21,7 @@ networkMGFs(
 above this threshold are included in the network. Default is 0.5.}
 
 \item{outputGML}{The file path prefix for saving the output GraphML file. Default is
-`'Desktop/msms_network'`.}
+`'msms_network'` in current working directory.}
 
 \item{includeMS1}{Logical. If TRUE, directional MS1-based annotations are used to modify
 edge weights in the network. Annotations will be added to network edges. Default is TRUE.}
