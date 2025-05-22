@@ -42,9 +42,9 @@ graphMinalemine <- function() {
 #' @param outputGML The file path prefix for saving the output GraphML file. Default is
 #'   `'msms_network'` in current working directory.
 #' @param includeMS1 Logical. If TRUE, directional MS1-based annotations are used to modify
-#'   edge weights in the network. Annotations will be added to network edges. Default is TRUE.
+#'   edge weights in the network. Annotations will be added to network edges. Default is FALSE.
 #' @param includeFragments Logical. If TRUE, pairwise calculations of two features will 
-#'   include fragment values as well as neutral losses. Default is TRUE.
+#'   include fragment values as well as neutral losses. Default is FALSE.
 #' @param rt_h Numeric. Clustering height for retention time grouping. Default = 30.
 #' @param mz_h Numeric. Clustering height for m/z grouping. Default = 0.005.
 #'
@@ -68,7 +68,7 @@ graphMinalemine <- function() {
 #' @import foreach
 #' @importFrom stringr str_split
 #' @export
-networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', includeMS1 = TRUE, includeFragments = TRUE, rt_h = 30, mz_h = 0.005) {
+networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', includeMS1 = FALSE, includeFragments = FALSE, rt_h = 30, mz_h = 0.005) {
   data     <- list()
   names    <- c()
   pmz      <- c()
