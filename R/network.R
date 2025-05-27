@@ -76,6 +76,7 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
   ioncount <- c()
   rt       <- c()
   charge   <- c()
+  labels   <- c()
 
   # Register parallel backend
   n_cores <- parallel::detectCores() - 1
@@ -86,39 +87,41 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
   parallel::clusterExport(cl, list("calculatePWDiff"))
 
   # Read and process MGF files in parallel
-  results <- foreach(file = files, .packages = c("MSnbase", "tools")) %dopar% {
+  results <- foreach(file = files, .packages = c("tools")) %do% {
     fs <- file.size(file)
 
     if (!is.na(fs) && fs > 0) {
-      mgfdata <- MSnbase::readMgfData(file)
-      rows    <- nrow(mgfdata@featureData@data)
+      mgfdata <- msannotator::parse_mgf_blocks(readChar(file, fs))
       scans   <- list()
 
-      for (m in 1:rows) {
+      for (scan in mgfdata) {
+        metadata <- scan$metadata
+        pepmass  <- as.numeric(metadata$PEPMASS)
+
         cut <- which(
-          mgfdata[[m]]@intensity < 10 |
-          mgfdata[[m]]@mz > mgfdata[[m]]@precursorMz
+          scan$spectrum[,'intensity'] < 10 |
+          scan$spectrum[,'mz'] > pepmass
         )
 
-        mz <- mgfdata[[m]]@mz
+        mz <- scan$spectrum[,'mz']
         if (length(cut) > 0) {
           mz <- replace(mz, cut, NA)
         }
 
-        mz <- mz[order(mgfdata[[m]]@intensity, decreasing = TRUE)][1:30]
+        mz <- mz[order(scan$spectrum[,'intensity'], decreasing = TRUE)][1:30]
         mz <- mz[!is.na(mz)]
 
         if (length(mz) > 3) {
           base_name <- tools::file_path_sans_ext(basename(file))
-          scan_id   <- as.character(mgfdata@featureData[[1]][m])
-
+          label <- ifelse(is.null(metadata$NAME), NA, metadata$NAME)
           scans[[length(scans) + 1]] <- list(
             mz          = mz,
-            precursorMz = mgfdata[[m]]@precursorMz,
+            precursorMz = pepmass,
             base_name   = base_name,
-            scan_id     = scan_id,
-            rt          = mgfdata[[m]]@rt,
-            charge      = mgfdata[[m]]@precursorCharge
+            scan_id     = metadata$FEATURE_ID,
+            rt          = metadata$RTINSECONDS,
+            charge      = metadata$CHARGE,
+            label       = label
           )
         }
       }
@@ -146,6 +149,7 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
     ioncount <- c(ioncount, length(res$mz))
     rt       <- c(rt, res$rt)
     charge   <- c(charge, res$charge)
+    labels   <- c(labels, res$label)
   }
 
   # add zero to mz list for a scan to include fragment values for comparison
@@ -242,7 +246,8 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
     rt,
     contract,
     graph_name = outputGML,
-    config = paste0('{ "cutoff" : ', cutoff, ', "includeMS1" : ', includeMS1, ', "includeFragments" : ', includeFragments, ' }' )
+    config = paste0('{ "cutoff" : ', cutoff, ', "includeMS1" : ', includeMS1, ', "includeFragments" : ', includeFragments, ' }' ),
+    labels
   )
 }
 
@@ -267,6 +272,8 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
 #' @param graph_name The desired name for the output GraphML file. Default is `'new_graph'`.
 #' @param config A JSON formatted object containing the creation parameters for the output GraphML file. 
 #'   Default is `{}`.
+#' @param labels A vector of labels to assign to the name property of the vertex for display in cytoscape.
+#'    If label value is NA, the mean mz value of the contracted vertex is assigned to the name property.
 #'
 #' @return No return value. Writes the generated similarity network as a GraphML file to
 #'   the specified path.
@@ -285,7 +292,7 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
 #'               contract = merge_indices, graph_name = "molecular_network")
 #'
 #' @import igraph
-outputGraphML <- function(tbl, pmzs, source, ioncount, annotation, rt, contract, graph_name = 'new_graph', config = '{}') {
+outputGraphML <- function(tbl, pmzs, source, ioncount, annotation, rt, contract, graph_name = 'new_graph', config = '{}', labels) {
 
   # Create a graph from a similarity matrix
   g <- igraph::graph.adjacency(
@@ -355,8 +362,12 @@ outputGraphML <- function(tbl, pmzs, source, ioncount, annotation, rt, contract,
   V(g)$color              <- "skyblue"
   V(g)$vertex.frame.color <- "white"
 
-  # set to disply the mz values in cytoscape
+  # set to disply the mz values in cytoscape by default
   V(g)$name <- as.character(V(g)$avg_mz)
+
+  # unless there is a designated label assigned to the scan
+  hasLabel <- which(!is.na(labels))
+  V(g)[contract[hasLabel]]$name <- labels[hasLabel]
 
   # Add graph-level attributes (key-value pairs)
   graph_attr(g, "generated_by") <- "msannotator"

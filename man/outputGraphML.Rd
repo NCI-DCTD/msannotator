@@ -13,7 +13,8 @@ outputGraphML(
   rt,
   contract,
   graph_name = "new_graph",
-  config = "{}"
+  config = "{}",
+  labels
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ equivalence relations.}
 
 \item{config}{A JSON formatted object containing the creation parameters for the output GraphML file. 
 Default is `{}`.}
+
+\item{labels}{A vector of labels to assign to the name property of the vertex for display in cytoscape.
+If label value is NA, the mean mz value of the contracted vertex is assigned to the name property.}
 
 \item{direction}{A vector describing the ion relationships for each spectrum.}
 }
