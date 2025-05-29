@@ -6,6 +6,8 @@
 
 ## 📦 Installation
 
+**Requires:** R version ≥ 4.2.0
+
 You can install the package directly from GitHub using `devtools`:
 
 ```r
