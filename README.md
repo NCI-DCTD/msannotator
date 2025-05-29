@@ -10,6 +10,7 @@ You can install the package directly from GitHub using `devtools`:
 
 ```r
 devtools::install_github("nci-dctd/msannotator")
+```
 
 ## 🚀 Quick Start
 
@@ -18,6 +19,7 @@ Load the package and run a test graph generation:
 ```r
 library(msannotator)
 graphMinalemine()
+```
 
 This will generate a file in your current working directory:
 
