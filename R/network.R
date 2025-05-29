@@ -62,11 +62,8 @@ graphMinalemine <- function() {
 #' files <- list.files("data/mgf/", pattern = "\\.mgf$", full.names = TRUE)
 #' networkMGFs(files, cutoff = 0.6, outputGML = "results/network", includeMS1 = TRUE)
 #'
-#' @import MSnbase
-#' @import igraph
 #' @import doParallel
 #' @import foreach
-#' @importFrom stringr str_split
 #' @export
 networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', includeMS1 = FALSE, includeFragments = FALSE, rt_h = 30, mz_h = 0.005) {
   data     <- list()
@@ -84,42 +81,45 @@ networkMGFs <- function(files, cutoff = 0.5, outputGML = 'msms_network', include
   doParallel::registerDoParallel(cl)
 
   # Export necessary functions to workers
-  parallel::clusterExport(cl, list("calculatePWDiff"))
+  parallel::clusterExport(cl, list("calculatePWDiff", "parse_mgf_blocks"))
 
   # Read and process MGF files in parallel
-  results <- foreach(file = files, .packages = c("tools")) %do% {
+  results <- foreach(file = files, .packages = c("tools")) %dopar% {
     fs <- file.size(file)
 
     if (!is.na(fs) && fs > 0) {
-      mgfdata <- msannotator::parse_mgf_blocks(readChar(file, fs))
+      mgfdata <- parse_mgf_blocks(readChar(file, fs))
       scans   <- list()
 
       for (scan in mgfdata) {
         metadata <- scan$metadata
         pepmass  <- as.numeric(metadata$PEPMASS)
+        spectra  <- scan$spectrum
 
-        cut <- which(
-          scan$spectrum[,'intensity'] < 10 |
-          scan$spectrum[,'mz'] > pepmass
-        )
+        # remove product ions with intensity lower than 10 or are
+        # greater mass than the parent ion
+        filter  <- (spectra[, 'intensity'] > 10 & spectra[, 'mz'] <= pepmass)
+        spectra <- spectra[filter,]
 
-        mz <- scan$spectrum[,'mz']
-        if (length(cut) > 0) {
-          mz <- replace(mz, cut, NA)
-        }
+        # remove any NA mz values. sort by decreasing intensity and select the top 30 remaining values         
+        mz <- head(spectra[order(spectra[, 'intensity'], decreasing = TRUE), 'mz'], 30)
 
-        mz <- mz[order(scan$spectrum[,'intensity'], decreasing = TRUE)][1:30]
-        mz <- mz[!is.na(mz)]
-
+        # final mz vector must contain at least 3 values
         if (length(mz) > 3) {
           base_name <- tools::file_path_sans_ext(basename(file))
-          label <- ifelse(is.null(metadata$NAME), NA, metadata$NAME)
+
+          # not all fields may be extracted from the mgf, but all that are
+          # extracted are as.characters
+          label     <- ifelse(is.null(metadata$NAME), NA, metadata$NAME)
+          rt_val    <- ifelse(is.null(metadata$RTINSECONDS), 0, as.numeric(metadata$RTINSECONDS))
+          scan_id   <- ifelse(is.null(metadata$FEATURE_ID), "0", metadata$FEATURE_ID)
+
           scans[[length(scans) + 1]] <- list(
             mz          = mz,
             precursorMz = pepmass,
             base_name   = base_name,
-            scan_id     = metadata$FEATURE_ID,
-            rt          = metadata$RTINSECONDS,
+            scan_id     = scan_id,
+            rt          = rt_val,
             charge      = metadata$CHARGE,
             label       = label
           )
